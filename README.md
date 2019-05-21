@@ -8,21 +8,21 @@ The purpose of this project is to make program that can classify dog breed
 
 And if that picture is human, print the dog breed that most similar
 
-1. make human detection program
+#### 1. make human detection program
 
 I used cv2.CascadeClassifier
 
-2. make dog detection program
+#### 2. make dog detection program
 
 I used transfer learning of VGG16 and used it all
 
-3. make classifing dog's breed program
+#### 3. make classifing dog's breed program
 
 Firstly I created CNN model by scratch but it did not work well
 
 Secondly I used transfer learning by VGG16 but changed last classifier linear model to 133 final classes
 
-4. Make final application all functions put together
+#### 4. Make final application all functions put together
 
 App should classify picture as human or dog
 
@@ -65,23 +65,20 @@ The number detected dog face at 100 pictures :  17
 ## 2. Detecting dogs using transfer learning pretrained model
 
 ```python
-# define VGG16 model
+
 VGG16 = models.vgg16(pretrained=True)
 
-# check if CUDA is available
 use_cuda = torch.cuda.is_available()
 
-# move model to GPU if CUDA is available
 if use_cuda:
     VGG16 = VGG16.cuda()
 ```
 ```python
-# This function will return indices of ImageNet
+
 def VGG16_predict(img_path):
     
-    # PIL returns image 'BGR'
     image = Image.open(img_path).convert('RGB')
-    # preprocess image to tensor and size, normalization same as VGG16 trained
+
     transformations = transforms.Compose([transforms.Resize(size=224),
                                           transforms.CenterCrop((224,224)),
                                          transforms.ToTensor(),
@@ -89,15 +86,11 @@ def VGG16_predict(img_path):
                                                               std=[0.229, 0.224, 0.225])])
     image_tensor = transformations(image)[:,:,:].unsqueeze(0)
     
-    # move model inputs to cuda, if GPU available
     if torch.cuda.is_available():
         image_tensor = image_tensor.cuda()
 
-    # get sample outputs
     output = VGG16(image_tensor)
     
-    # convert output probabilities to predicted class
-    # Or can use torch.argmax(), it returns only indices
     _, preds_tensor = torch.max(output, 1)
     pred = np.squeeze(preds_tensor.numpy()) if not use_cuda else np.squeeze(preds_tensor.cpu().numpy())
  
@@ -106,6 +99,7 @@ def VGG16_predict(img_path):
 ```python
 # ImageNet have dogs data indices between 151~268
 # Therefore if result of VGG16_predict(image) is between them, it is dog
+
 def dog_detector(img_path):
     
     output = VGG16_predict(img_path)
@@ -165,11 +159,10 @@ loaders_scratch = {
 ```python
 
 class Net(nn.Module):
-    ### TODO: choose an architecture, and complete the class
+
     def __init__(self):
         super(Net, self).__init__()
         
-        # CNN
         self.conv1 = nn.Sequential(
                     nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1),
                     nn.BatchNorm2d(16)
@@ -185,45 +178,38 @@ class Net(nn.Module):
                     nn.BatchNorm2d(64)
                     )        
 
-        # max pooling layer
         self.pool = nn.MaxPool2d(2, 2)
-        # linear layer (64 * 28 * 28 -> 500)
+
         self.fc1 = nn.Linear(64 * 28 * 28, 500)
-        # linear layer (500 -> 133)
+
         self.fc2 = nn.Linear(500, 133)
-        # dropout layer (p=0.25)
+
         self.dropout = nn.Dropout(0.25)
+        
         self.batch_norm = nn.BatchNorm1d(num_features=500)
     
     def forward(self, x):
-        ## Define forward behavior
+
         x = self.pool(F.relu(self.conv1(x)))
         
-        # add dropout layer
         x = self.dropout(x)
         
         x = self.pool(F.relu(self.conv2(x)))
         
-        # add dropout layer
         x = self.dropout(x)
         
         x = self.pool(F.relu(self.conv3(x)))
 
-        # add dropout layer
         x = self.dropout(x)
-        
-        # flatten image input
-        # 64 * 28 * 28         
+             
         x = x.view(x.size(0), -1)
         
-        # add 1st hidden layer, with relu activation function
         x = F.relu(self.batch_norm(self.fc1(x)))
         
-        # add dropout layer
         x = self.dropout(x)
         
-        # add 2nd hidden layer, with relu activation function
         x = self.fc2(x)
+        
         return x
         
 criterion_scratch = nn.CrossEntropyLoss()
@@ -271,7 +257,6 @@ test loss : 0.628 (85% accuracy)
 ```python
 
 def predict_breed_transfer(img_path):
-    # load the image and return the predicted breed
     
     image = Image.open(img_path).convert('RGB')
     transformations = transforms.Compose([transforms.Resize(size=224),
@@ -280,20 +265,12 @@ def predict_breed_transfer(img_path):
                                          transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                               std=[0.229, 0.224, 0.225])])
     image_tensor = transformations(image)[:,:,:].unsqueeze(0)
-
-    # move model inputs to cuda, if GPU available
     
     if use_cuda:
         image_tensor = image_tensor.cuda()
     
-    
-    # get sample outputs
     output = model_transfer(image_tensor)
-    # convert output probabilities to predicted class
-    # torch.max returns max tensor,indices
-    # torch.argmax returns only indices
-    
-    #_, preds_tensor = torch.max(output, 1)
+
     preds_tensor = torch.argmax(output, 1)
     pred = np.squeeze(preds_tensor.numpy()) if not use_cuda else np.squeeze(preds_tensor.cpu().numpy())
     
