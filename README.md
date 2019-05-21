@@ -8,23 +8,27 @@ The purpose of this project is to make program that can classify dog breed
 
 And if that picture is human, print the dog breed that most similar
 
-1. making human detect program
+1. make human detection program
 
-use cv2.haar..
+I used cv2.CascadeClassifier
 
-2. dog detect program
+2. make dog detection program
 
-use transfer learning of VGG16
+I used transfer learning of VGG16 and used it all
 
-3. classify dog breed program
+3. make classifing dog's breed program
 
-firstly I created CNN model by scratch but it did not work well
+Firstly I created CNN model by scratch but it did not work well
 
-secondly I used transfer learning by VGG16 but changed last classifier linear model to 133 final classes
+Secondly I used transfer learning by VGG16 but changed last classifier linear model to 133 final classes
 
-4. make app
+4. Make final application all functions put together
 
-Finally I put these all together to make app 
+App should classify picture as human or dog
+
+If picture is dog, should present dog's breed
+
+If picture is human, should present most similar dog's breed
 
 
 # Background Learning
