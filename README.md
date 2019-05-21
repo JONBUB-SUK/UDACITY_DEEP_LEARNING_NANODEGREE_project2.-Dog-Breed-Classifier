@@ -34,257 +34,328 @@ If picture is human, should present most similar dog's breed
 # Background Learning
 
 
-### 1. Introduction to Neural Net
+### 1. Convolutional Neural Network
 
 <img src="./images/study/Introduction_to_NeuralNet_1.jpg" width="400">
-<img src="./images/study/Introduction_to_NeuralNet_2.jpg" width="400">
 
-### 2. Gradient Descent
+Editing...
 
-<img src="./images/study/Gradient_descent_1.jpg" width="400">
-<img src="./images/study/Gradient_descent_2.jpg" width="400">
 
-### 3. Training Neural Network
-
-<img src="./images/study/Training_NeuralNet_1.jpg" width="400">
-<img src="./images/study/Training_NeuralNet_2.jpg" width="400">
-<img src="./images/study/Training_NeuralNet_3.jpg" width="400">
-<img src="./images/study/Training_NeuralNet_4.jpg" width="400">
 
 # Flow
 
-## 1. Preparing Data
+## 1. Detecting human
 
-### 1. Loading and preparing data
+```python
+face_cascade = cv2.CascadeClassifier('haarcascades/haarcascade_frontalface_alt.xml')
+
+def face_detector(img_path):
+    img = cv2.imread(img_path)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray)
+    return len(faces) > 0
+    
+```
+
+I tested this function to 100 images of human and dogs
+
+The number detected human face at 100 pictures :  98
+The number detected dog face at 100 pictures :  17
+
+## 2. Detecting dogs using transfer learning pretrained model
+
+```python
+# define VGG16 model
+VGG16 = models.vgg16(pretrained=True)
+
+# check if CUDA is available
+use_cuda = torch.cuda.is_available()
+
+# move model to GPU if CUDA is available
+if use_cuda:
+    VGG16 = VGG16.cuda()
+```
+```python
+# This function will return indices of ImageNet
+def VGG16_predict(img_path):
+    
+    # PIL returns image 'BGR'
+    image = Image.open(img_path).convert('RGB')
+    # preprocess image to tensor and size, normalization same as VGG16 trained
+    transformations = transforms.Compose([transforms.Resize(size=224),
+                                          transforms.CenterCrop((224,224)),
+                                         transforms.ToTensor(),
+                                         transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                              std=[0.229, 0.224, 0.225])])
+    image_tensor = transformations(image)[:,:,:].unsqueeze(0)
+    
+    # move model inputs to cuda, if GPU available
+    if torch.cuda.is_available():
+        image_tensor = image_tensor.cuda()
+
+    # get sample outputs
+    output = VGG16(image_tensor)
+    
+    # convert output probabilities to predicted class
+    # Or can use torch.argmax(), it returns only indices
+    _, preds_tensor = torch.max(output, 1)
+    pred = np.squeeze(preds_tensor.numpy()) if not use_cuda else np.squeeze(preds_tensor.cpu().numpy())
+ 
+    return int(pred)
+```
+```python
+# ImageNet have dogs data indices between 151~268
+# Therefore if result of VGG16_predict(image) is between them, it is dog
+def dog_detector(img_path):
+    
+    output = VGG16_predict(img_path)
+    
+    if (150 < output) and (output < 269):
+        result = True
+    else:
+        result = False
+    
+    return result
+
+```
+
+## 3. Classify dog's breed
+
+### Data preprocessing and loading 
+
+I manipulate training data by flipping, rotating to prevent overfitting
+
+And just resize and crop, normalize valid & test data
+
+```python
+train_data_dir = '/data/dog_images/train'
+valid_data_dir = '/data/dog_images/valid'
+test_data_dir = '/data/dog_images/test'
+
+train_transforms = transforms.Compose([transforms.Resize(size=224),
+                                       transforms.CenterCrop((224,224)),
+                                       transforms.RandomHorizontalFlip(), # randomly flip and rotate
+                                       transforms.RandomRotation(10),
+                                       transforms.ToTensor(),
+                                       transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+
+valid_transforms = transforms.Compose([transforms.Resize(224),
+                                       transforms.CenterCrop((224,224)),
+                                       transforms.ToTensor(),
+                                       transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+
+test_transforms = transforms.Compose([transforms.Resize(224),
+                                      transforms.CenterCrop((224,224)),
+                                      transforms.ToTensor(),
+                                      transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+
+image_datasets = {'train': datasets.ImageFolder(train_data_dir, transform=train_transforms),
+                  'valid': datasets.ImageFolder(valid_data_dir, transform=valid_transforms),
+                  'test': datasets.ImageFolder(test_data_dir, transform=test_transforms)
+                 }
+
+loaders_scratch = {
+    x: torch.utils.data.DataLoader(image_datasets[x], shuffle=True, batch_size=32)
+    for x in ['train', 'valid', 'test']}
+
+```
+
+### 1. Create my own architecture
+
+```python
+
+class Net(nn.Module):
+    ### TODO: choose an architecture, and complete the class
+    def __init__(self):
+        super(Net, self).__init__()
+        
+        # CNN
+        self.conv1 = nn.Sequential(
+                    nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1),
+                    nn.BatchNorm2d(16)
+                    )
+
+        self.conv2 = nn.Sequential(
+                    nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1),
+                    nn.BatchNorm2d(32)
+                    )
+        
+        self.conv3 = nn.Sequential(
+                    nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+                    nn.BatchNorm2d(64)
+                    )        
+
+        # max pooling layer
+        self.pool = nn.MaxPool2d(2, 2)
+        # linear layer (64 * 28 * 28 -> 500)
+        self.fc1 = nn.Linear(64 * 28 * 28, 500)
+        # linear layer (500 -> 133)
+        self.fc2 = nn.Linear(500, 133)
+        # dropout layer (p=0.25)
+        self.dropout = nn.Dropout(0.25)
+        self.batch_norm = nn.BatchNorm1d(num_features=500)
+    
+    def forward(self, x):
+        ## Define forward behavior
+        x = self.pool(F.relu(self.conv1(x)))
+        
+        # add dropout layer
+        x = self.dropout(x)
+        
+        x = self.pool(F.relu(self.conv2(x)))
+        
+        # add dropout layer
+        x = self.dropout(x)
+        
+        x = self.pool(F.relu(self.conv3(x)))
+
+        # add dropout layer
+        x = self.dropout(x)
+        
+        # flatten image input
+        # 64 * 28 * 28         
+        x = x.view(x.size(0), -1)
+        
+        # add 1st hidden layer, with relu activation function
+        x = F.relu(self.batch_norm(self.fc1(x)))
+        
+        # add dropout layer
+        x = self.dropout(x)
+        
+        # add 2nd hidden layer, with relu activation function
+        x = self.fc2(x)
+        return x
+        
+criterion_scratch = nn.CrossEntropyLoss()
+
+optimizer_scratch = optim.SGD(model_scratch.parameters(), lr = 0.05)
+```
+
+After 10 epochs, achieved
+
+train loss : 4.639 → 3.091
+valid loss : 4.599 → 4.108
+
+test loss : 3.981 (11% accuracy)
+
+
+### 2. Use transfer learning
+
+I used VGG16 model
+
+```python
+
+model_transfer = models.vgg16(pretrained=True)
+
+if use_cuda:
+    model_transfer = model_transfer.cuda()
+
+for param in model_transfer.parameters():
+    param.requires_grad = False
+    
+model_transfer.classifier[6] = nn.Linear(4096,133)
+
+criterion_transfer = nn.CrossEntropyLoss()
+optimizer_transfer = optim.Adam(model_transfer.classifier[6].parameters(), lr=0.001)
+
+```
+
+After 10 epochs, achieved
+
+train loss : 1.262 → 0.304
+valid loss : 0.561 → 0.446
+
+test loss : 0.628 (85% accuracy)
 
 
 ```python
-data_path = 'Bike-Sharing-Dataset/hour.csv'
 
-rides = pd.read_csv(data_path)
+def predict_breed_transfer(img_path):
+    # load the image and return the predicted breed
+    
+    image = Image.open(img_path).convert('RGB')
+    transformations = transforms.Compose([transforms.Resize(size=224),
+                                          transforms.CenterCrop((224,224)),
+                                         transforms.ToTensor(),
+                                         transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                              std=[0.229, 0.224, 0.225])])
+    image_tensor = transformations(image)[:,:,:].unsqueeze(0)
 
-rides.head()
+    # move model inputs to cuda, if GPU available
+    
+    if use_cuda:
+        image_tensor = image_tensor.cuda()
+    
+    
+    # get sample outputs
+    output = model_transfer(image_tensor)
+    # convert output probabilities to predicted class
+    # torch.max returns max tensor,indices
+    # torch.argmax returns only indices
+    
+    #_, preds_tensor = torch.max(output, 1)
+    preds_tensor = torch.argmax(output, 1)
+    pred = np.squeeze(preds_tensor.numpy()) if not use_cuda else np.squeeze(preds_tensor.cpu().numpy())
+    
+    return class_names[pred]
 ```
 
-<img src="./images/input_data_1.png" width="800">
-
-### 2. Checking out the data
-
-I checked and plotted for 10 days data
+## 4. Put these all together
 
 ```python
-rides[:24*10].plot(x='dteday', y='cnt')
+
+def display_image(img_path, title="Title"):
+    image = Image.open(img_path)
+    plt.title(title)
+    plt.imshow(image)
+    plt.show()
+    
+def run_app(img_path):
+    ## handle cases for a human face, dog, and neither
+    if dog_detector(img_path):
+        print("Hello Doggie!")
+        predicted_breed = predict_breed_transfer(img_path)
+        display_image(img_path, title=f"Predicted:{predicted_breed}")
+        
+        print("Your breed is most likley ...")
+        print(predicted_breed)
+    elif (face_detector(img_path)):
+        print("Hello human")
+        predicted_breed = predict_breed_transfer(img_path)
+        display_image(img_path, title=f"Predicted:{predicted_breed}")
+        
+        print("You look like a ...")
+        print(predicted_breed)
+    else:
+        print("There are no human or dog")
+        display_image(img_path, title="Not a human or dog")
+    print("\n")
+
 ```
 
-<img src="./images/input_data_2.png" width="400">
 
-### 3. Dummify variables
+# Result
 
-For example, month has 12 values (1~12)
-
-But December doesn't mean that it has much valuable than January
-
-Because we put numbers to our Neural Net by x (input layer),
-we need to set all variables to equal value (0 or 1)
-
-And that variables are season, weather, month, hour, weekday
-
-```python
-dummy_fields = ['season', 'weathersit', 'mnth', 'hr', 'weekday']
-for each in dummy_fields:
-    dummies = pd.get_dummies(rides[each], prefix=each, drop_first=False)
-    rides = pd.concat([rides, dummies], axis=1)
-
-fields_to_drop = ['instant', 'dteday', 'season', 'weathersit', 
-                  'weekday', 'atemp', 'mnth', 'workingday', 'hr']
-data = rides.drop(fields_to_drop, axis=1)
-data.head()
-```
-
-<img src="./images/dummify_variables.png" width="800">
-
-### 4. Scaling target variables
-
-For example, number of rental for an hour can be 0 or even 10,000
-
-It can have too much difference and it can make distortion for Neuaral Net calculation
-
-So we have to scaling to equal range that have 0 mean and 1 standard deviation
-
-That variables are total rental number, registered number, casueal number, temperature, humidity, windspeed
-
-```python
-quant_features = ['casual', 'registered', 'cnt', 'temp', 'hum', 'windspeed']
-# Store scalings in a dictionary so we can convert back later
-scaled_features = {}
-for each in quant_features:
-    mean, std = data[each].mean(), data[each].std()
-    scaled_features[each] = [mean, std]
-    data.loc[:, each] = (data[each] - mean)/std
-```
-
-<img src="./images/scaling_target_variables.png" width="800">
-
-### 5. Splitting data into training, validation, testing sets
-
-```python
-test_data = data[-21*24:]
-
-data = data[:-21*24]
-
-target_fields = ['cnt', 'casual', 'registered']
-
-features, targets = data.drop(target_fields, axis=1), data[target_fields]
-
-test_features, test_targets = test_data.drop(target_fields, axis=1), test_data[target_fields]
-
-train_features, train_targets = features[:-60*24], targets[:-60*24]
-
-val_features, val_targets = features[-60*24:], targets[-60*24:]
-```
-
-<img src="./images/test_features.png" width="800">
-<img src="./images/test_targets.png" width="200">
-
-
-## 2. Training , valiation, test
-
-I did not included source code, please check .py files
-
-Below is flow of parameter tunnings
-
-### 1. Learning Rate = 0.1, Hidden Nodes = 2, Iteration = 100 (orininal set)
-
-<img src="./images/loss/loss_train_val_1.png" width="400">
-<img src="./images/result/result_1_lr=0.1,hidden=2,iteration=100.png" width="800">
-
-We can see validation loss is down getting down at loss graph
-
-That means it doesn't have correct architecture
-
-So I raised the hidden nodes
-
-### 2. Learning Rate = 0.1, Hidden Nodes = 100, Iteration = 100
-
-<img src="./images/loss/loss_train_val_2.png" width="400">
-<img src="./images/result/result_2_lr=0.1,hidden=100,iteration=100.png" width="800">
-
-This time but validation loss exploded
-
-So I lowered the hidden nodes
-
-### 3. Learning Rate = 0.1, Hidden Nodes = 50, Iteration = 100
-
-<img src="./images/loss/loss_train_val_3.png" width="400">
-<img src="./images/result/result_3_lr=0.1,hidden=50,iteration=100.png" width="800">
-
-This time, validation loss is not exploded but increased slowely
-
-So I lowered the hidden nodes more
-
-### 4. Learning Rate = 0.1, Hidden Nodes = 25, Iteration = 100
-
-<img src="./images/loss/loss_train_val_4.png" width="400">
-<img src="./images/result/result_4_lr=0.1,hidden=25,iteration=100.png" width="800">
-
-Thie time, validation loss is slowly getting down
-
-So I lowered the hidden nodes more
-
-### 5. Learning Rate = 0.1, Hidden Nodes = 13, Iteration = 100
-
-<img src="./images/loss/loss_train_val_5.png" width="400">
-<img src="./images/result/result_5_lr=0.1,hidden=13,iteration=100.png" width="800">
-
-This time, validation loss increased slowely
-
-So I raised the hidden nodes a little
-
-### 6. Learning Rate = 0.1, Hidden Nodes = 20, Iteration = 100
-
-<img src="./images/loss/loss_train_val_6.png" width="400">
-<img src="./images/result/result_6_lr=0.1,hidden=20,iteration=100.png" width="800">
-
-This time again, validation loss increased slowely
-
-So I raised the hidden nodes a little
-
-### 7. Learning Rate = 0.1, Hidden Nodes = 30, Iteration = 100
-
-<img src="./images/loss/loss_train_val_7.png" width="400">
-<img src="./images/result/result_7_lr=0.1,hidden=30,iteration=100.png" width="800">
-
-This time again, validation loss increased slowely
-
-So I concluded 25 is adaquate
-
-And next time, I raised learning rate to decrease error more fastly
-
-### 8. Learning Rate = 0.5, Hidden Nodes = 25, Iteration = 100
-
-<img src="./images/loss/loss_train_val_8.png" width="400">
-<img src="./images/result/result_8_lr=0.5,hidden=25,iteration=100.png" width="800">
-
-It was effective
-
-So I raised more
-
-### 9. Learning Rate = 1.0, Hidden Nodes = 25, Iteration = 100
-
-<img src="./images/loss/loss_train_val_9.png" width="400">
-<img src="./images/result/result_9_lr=1.0,hidden=25,iteration=100.png" width="800">
-
-It excluded
-
-So I concluded learning rate = 0.5 is adaquate
-
-Now its time to iteration
-
-I just put very high number to iteration
-
-### 10. Learning Rate = 0.5, Hidden Nodes = 25, Iteration = 7000
-
-<img src="./images/loss/loss_train_val_10.png" width="400">
-<img src="./images/result/result_10_lr=0.5,hidden=25,iteration=7000.png" width="800">
-
-Seeing loss graph, we can find val loss is inclined after 6500 iterations
-
-So I concluded iteration = 6500 is adaquate
-
-### 11. Learning Rate = 0.5, Hidden Nodes = 25, Iteration = 6500
-
-<img src="./images/loss/loss_train_val_11.png" width="400">
-<img src="./images/result/result_11_lr=0.5,hidden=25,iteration=6500.png" width="800">
-
+<img src="./images/result_1.png" width="900">
+<img src="./images/result_2.png" width="900">
 
 
 # Conclusion & Discussion
 
-### 1. Meaning
+### 1. Data augmentation
 
-I already used Keras and TensorFlow library at Self Driving Car Nanodegree program
+Refer to AlexNet, VGG, ResNet.. I can get so many method to augmentation
+And it will give more anti overfitting result and higher accuracy
 
-Especially at Keras, it was possible to implement not only simple Neural Net but also complex and famous architectures
+### 2. Changing architecture
 
-even if I don't understand principle of Neural Net
+This time, I only changed last fully connected layer so as not to spend too much time on training
+But if I change all the classifier layers and train all the parameters again,
+I will get better result
 
-At that time, I thought I understood everything of Neural Net
+### 3. Human detection part
 
-But this time was very good chance for me to studying Neural Net
-
-especially the mathmatical principle of Forward propagation, Backpropagation
-
-### 2. About architecture
-
-This project confined architectures to just 1 hidden layer Neural Net
-
-So there were only 3 variables I can adjust
-
-It was learning rate, number of hidden nodes, iterations
-
-Of course on the contrary, thanks to it, it was good time to feel the effects of that variables
-
-But if I can change architecture more complex, I will get better result
-
+It's accuracy at human picture was good, but it also mistaken dog as human as 17%
+So it also need to use data learning method not only depend on cv2 library
 
 
