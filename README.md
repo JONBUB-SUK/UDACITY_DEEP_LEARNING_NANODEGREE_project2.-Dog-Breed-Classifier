@@ -1,40 +1,39 @@
-# DEEP LEARNING NANODEGREE project2.Dog Breed Classifier
-
-# 1. Introduction
+# DEEP LEARNING NANODEGREE
+# Project2. Dog Breed Classifier
 
 ## 1. Abstract
 
-The purpose of this project is to make program that can classify dog breed
+The purpose of this project is to make aplication program that can classify dog breed
 
-And if that picture is human, print the dog breed that most similar
+If detected picture is dog, program should present the dog's breed
 
-#### 1. make human detection program
+And if detected picture is human, program should present the most similar dog's breed
 
-I used cv2.CascadeClassifier
+First, I made human detection program
 
-#### 2. make dog detection program
+To do that, I used cv2.CascadeClassifier in cv2 libarary
 
-I used transfer learning of VGG16 and used it all
+Secondly, I made dog detection program
 
-#### 3. make classifing dog's breed program
+To do that, I used transfer learning of VGG16 and used all the parameters already trained
 
-Firstly I created CNN model by scratch but it did not work well
+Thirdly, I made classifying dog's breed program
 
-Secondly I used transfer learning by VGG16 but changed last classifier linear model to 133 final classes
+To do that, I created CNN model by scratch first
 
-#### 4. Make final application all functions put together
+But simple CNN structure that made by scratch did not work well
 
-App should classify picture as human or dog
+So I also used transfer learning by VGG16 but changed last classifier linear model to 133 final classes
 
-If picture is dog, should present dog's breed
+(Its because ImageNet data have 133 sorts of dogs)
 
-If picture is human, should present most similar dog's breed
-
-
-# 2. Related Study
+Finally I put these all together to make application program
 
 
-### 1) Convolutional Neural Network
+## 2. Related Study
+
+
+#### 1) Convolutional Neural Network
 
 ① ㅇㅁㄴㅇㅁㄴ
 
@@ -42,9 +41,9 @@ If picture is human, should present most similar dog's breed
 
 
 
-# 3. Code Flow
+## 3. Details
 
-### 1) Detecting human
+#### 1) Human Detection Program
 
 ```python
 face_cascade = cv2.CascadeClassifier('haarcascades/haarcascade_frontalface_alt.xml')
@@ -53,8 +52,7 @@ def face_detector(img_path):
     img = cv2.imread(img_path)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray)
-    return len(faces) > 0
-    
+    return len(faces) > 0   
 ```
 
 I tested this function to 100 images of human and dogs
@@ -62,10 +60,13 @@ I tested this function to 100 images of human and dogs
 The number detected human face at 100 pictures :  98
 The number detected dog face at 100 pictures :  17
 
-### 2) Detecting dogs using transfer learning pretrained model
+#### 2) Dog Detection Program Using Transfer Learning
+
+ImageNet have dogs data indices between 151~268
+
+Therefore if result of VGG16_predict(image) is between them, it is dog
 
 ```python
-
 VGG16 = models.vgg16(pretrained=True)
 
 use_cuda = torch.cuda.is_available()
@@ -74,7 +75,6 @@ if use_cuda:
     VGG16 = VGG16.cuda()
 ```
 ```python
-
 def VGG16_predict(img_path):
     
     image = Image.open(img_path).convert('RGB')
@@ -97,9 +97,6 @@ def VGG16_predict(img_path):
     return int(pred)
 ```
 ```python
-# ImageNet have dogs data indices between 151~268
-# Therefore if result of VGG16_predict(image) is between them, it is dog
-
 def dog_detector(img_path):
     
     output = VGG16_predict(img_path)
@@ -110,14 +107,13 @@ def dog_detector(img_path):
         result = False
     
     return result
-
 ```
 
-### 3) Classify dog's breed
+#### 3) Classifying Dog's Breed Program
 
-#### Data preprocessing and loading 
+① Data preprocessing and loading 
 
-I manipulate training data by flipping, rotating to prevent overfitting
+I manipulated training data by flipping, rotating to prevent overfitting
 
 And just resize and crop, normalize valid & test data
 
@@ -131,17 +127,20 @@ train_transforms = transforms.Compose([transforms.Resize(size=224),
                                        transforms.RandomHorizontalFlip(), # randomly flip and rotate
                                        transforms.RandomRotation(10),
                                        transforms.ToTensor(),
-                                       transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+                                       transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+                                                            std=[0.229, 0.224, 0.225])])
 
 valid_transforms = transforms.Compose([transforms.Resize(224),
                                        transforms.CenterCrop((224,224)),
                                        transforms.ToTensor(),
-                                       transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+                                       transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+                                                            std=[0.229, 0.224, 0.225])])
 
 test_transforms = transforms.Compose([transforms.Resize(224),
                                       transforms.CenterCrop((224,224)),
                                       transforms.ToTensor(),
-                                      transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+                                      transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+                                                           std=[0.229, 0.224, 0.225])])
 
 image_datasets = {'train': datasets.ImageFolder(train_data_dir, transform=train_transforms),
                   'valid': datasets.ImageFolder(valid_data_dir, transform=valid_transforms),
@@ -154,7 +153,7 @@ loaders_scratch = {
 
 ```
 
-① Create my own architecture
+② Create my own architecture
 
 ```python
 
@@ -225,7 +224,7 @@ valid loss : 4.599 → 4.108
 test loss : 3.981 (11% accuracy)
 
 
-② Use transfer learning
+③ Use transfer learning
 
 I used VGG16 model
 
@@ -277,7 +276,7 @@ def predict_breed_transfer(img_path):
     return class_names[pred]
 ```
 
-### 4) Put these all together
+#### 4) Put these all together
 
 ```python
 
@@ -311,26 +310,26 @@ def run_app(img_path):
 ```
 
 
-# 4.Results
+## 4.Results
 
 <img src="./images/result_1.png" width="900">
 <img src="./images/result_2.png" width="900">
 
 
-# 5.Discussion
+## 5.Discussion
 
-### 1) Data augmentation
+#### 1) Data augmentation
 
 Refer to AlexNet, VGG, ResNet.. I can get so many method to augmentation
 And it will give more anti overfitting result and higher accuracy
 
-### 2) Changing architecture
+#### 2) Changing architecture
 
 This time, I only changed last fully connected layer so as not to spend too much time on training
 But if I change all the classifier layers and train all the parameters again,
 I will get better result
 
-### 3) Human detection part
+#### 3) Human detection part
 
 It's accuracy at human picture was good, but it also mistaken dog as human as 17%
 So it also need to use data learning method not only depend on cv2 library
