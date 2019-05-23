@@ -81,7 +81,9 @@ def face_detector(img_path):
 I tested this function to 100 images of human and dogs
 
 The number detected human face at 100 pictures :  98
+
 The number detected dog face at 100 pictures :  17
+
 
 #### 2) Dog Detection Program Using Transfer Learning
 
@@ -147,7 +149,7 @@ test_data_dir = '/data/dog_images/test'
 
 train_transforms = transforms.Compose([transforms.Resize(size=224),
                                        transforms.CenterCrop((224,224)),
-                                       transforms.RandomHorizontalFlip(), # randomly flip and rotate
+                                       transforms.RandomHorizontalFlip(),
                                        transforms.RandomRotation(10),
                                        transforms.ToTensor(),
                                        transforms.Normalize(mean=[0.485, 0.456, 0.406], 
@@ -239,12 +241,15 @@ criterion_scratch = nn.CrossEntropyLoss()
 optimizer_scratch = optim.SGD(model_scratch.parameters(), lr = 0.05)
 ```
 
-After 10 epochs, achieved
+After 10 epochs, I achieved
 
 train loss : 4.639 → 3.091
+
 valid loss : 4.599 → 4.108
 
 test loss : 3.981 (11% accuracy)
+
+※ Rubic point for this is just better than 10% accuracy
 
 
 ③ Use transfer learning
