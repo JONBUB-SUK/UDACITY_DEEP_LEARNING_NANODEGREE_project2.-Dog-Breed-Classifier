@@ -1,6 +1,6 @@
-# UDACITY_DEEP_LEARNING_NANODEGREE_project2.-Dog-Breed-Classifier
+# DEEP LEARNING NANODEGREE project2.Dog Breed Classifier
 
-# Introduction
+# 1. Introduction
 
 ## 1. Abstract
 
@@ -31,20 +31,20 @@ If picture is dog, should present dog's breed
 If picture is human, should present most similar dog's breed
 
 
-# Background Learning
+# 2. Related Study
 
 
-### 1. Convolutional Neural Network
+### 1) Convolutional Neural Network
 
-<img src="./images/study/Introduction_to_NeuralNet_1.jpg" width="400">
+① ㅇㅁㄴㅇㅁㄴ
 
-Editing...
+② ㅁㄴㅇㅁㄴㅇㅁ
 
 
 
-# Flow
+# 3. Code Flow
 
-## 1. Detecting human
+### 1) Detecting human
 
 ```python
 face_cascade = cv2.CascadeClassifier('haarcascades/haarcascade_frontalface_alt.xml')
@@ -62,7 +62,7 @@ I tested this function to 100 images of human and dogs
 The number detected human face at 100 pictures :  98
 The number detected dog face at 100 pictures :  17
 
-## 2. Detecting dogs using transfer learning pretrained model
+### 2) Detecting dogs using transfer learning pretrained model
 
 ```python
 
@@ -113,9 +113,9 @@ def dog_detector(img_path):
 
 ```
 
-## 3. Classify dog's breed
+### 3) Classify dog's breed
 
-### Data preprocessing and loading 
+#### Data preprocessing and loading 
 
 I manipulate training data by flipping, rotating to prevent overfitting
 
@@ -154,7 +154,7 @@ loaders_scratch = {
 
 ```
 
-### 1. Create my own architecture
+① Create my own architecture
 
 ```python
 
@@ -225,7 +225,7 @@ valid loss : 4.599 → 4.108
 test loss : 3.981 (11% accuracy)
 
 
-### 2. Use transfer learning
+② Use transfer learning
 
 I used VGG16 model
 
@@ -277,7 +277,7 @@ def predict_breed_transfer(img_path):
     return class_names[pred]
 ```
 
-## 4. Put these all together
+### 4) Put these all together
 
 ```python
 
@@ -311,26 +311,26 @@ def run_app(img_path):
 ```
 
 
-# Result
+# 4.Results
 
 <img src="./images/result_1.png" width="900">
 <img src="./images/result_2.png" width="900">
 
 
-# Conclusion & Discussion
+# 5.Discussion
 
-### 1. Data augmentation
+### 1) Data augmentation
 
 Refer to AlexNet, VGG, ResNet.. I can get so many method to augmentation
 And it will give more anti overfitting result and higher accuracy
 
-### 2. Changing architecture
+### 2) Changing architecture
 
 This time, I only changed last fully connected layer so as not to spend too much time on training
 But if I change all the classifier layers and train all the parameters again,
 I will get better result
 
-### 3. Human detection part
+### 3) Human detection part
 
 It's accuracy at human picture was good, but it also mistaken dog as human as 17%
 So it also need to use data learning method not only depend on cv2 library
