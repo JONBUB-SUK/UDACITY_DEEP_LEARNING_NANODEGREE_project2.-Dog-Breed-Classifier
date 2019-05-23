@@ -35,10 +35,33 @@ Finally I put these all together to make application program
 
 #### 1) Convolutional Neural Network
 
-① ㅇㅁㄴㅇㅁㄴ
+① MLP vs CNN
 
-② ㅁㄴㅇㅁㄴㅇㅁ
+② MNIST dataset
 
+③ Loss & Optimization
+
+④ About CNN : Filters, Stride, Padding, Pooling
+
+⑤ Image augmentation
+
+⑥ Visualizing CNN
+
+#### 2) Transfer Learning
+
+① Various architectures can be used to transfer learning
+
+② Fine tuning according to size of data and similarity
+
+#### 3) Weight Initialization
+
+① Normal distribution weight initialization
+
+#### 4) Autoencoder
+
+① Encoder & Decoder
+
+② Denoiser using autoencoder
 
 
 ## 3. Details
@@ -320,7 +343,7 @@ def run_app(img_path):
 
 #### 1) Data augmentation
 
-Refer to AlexNet, VGG, ResNet.. I can get so many method to augmentation
+Refer to AlexNet, VGG, ResNet.. I can get so many methods to augmentation
 And it will give more anti overfitting result and higher accuracy
 
 #### 2) Changing architecture
