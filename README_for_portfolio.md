@@ -117,7 +117,8 @@ def VGG16_predict(img_path):
     output = VGG16(image_tensor)
     
     _, preds_tensor = torch.max(output, 1)
-    pred = np.squeeze(preds_tensor.numpy()) if not use_cuda else np.squeeze(preds_tensor.cpu().numpy())
+    pred = np.squeeze(preds_tensor.numpy()) if not use_cuda 
+                                            else np.squeeze(preds_tensor.cpu().numpy())
  
     return int(pred)
 ```
@@ -299,7 +300,8 @@ def predict_breed_transfer(img_path):
     output = model_transfer(image_tensor)
 
     preds_tensor = torch.argmax(output, 1)
-    pred = np.squeeze(preds_tensor.numpy()) if not use_cuda else np.squeeze(preds_tensor.cpu().numpy())
+    pred = np.squeeze(preds_tensor.numpy()) if not use_cuda 
+                                            else np.squeeze(preds_tensor.cpu().numpy())
     
     return class_names[pred]
 ```
