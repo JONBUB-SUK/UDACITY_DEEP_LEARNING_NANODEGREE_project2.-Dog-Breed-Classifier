@@ -351,17 +351,20 @@ def run_app(img_path):
 #### 1) Data augmentation
 
 Refer to AlexNet, VGG, ResNet.. I can get so many methods to augmentation
+
 And it will give more anti overfitting result and higher accuracy
 
 #### 2) Changing architecture
 
 This time, I only changed last fully connected layer so as not to spend too much time on training
+
 But if I change all the classifier layers and train all the parameters again,
 I will get better result
 
 #### 3) Human detection part
 
 It's accuracy at human picture was good, but it also mistaken dog as human as 17%
+
 So it also need to use data learning method not only depend on cv2 library
 
 
