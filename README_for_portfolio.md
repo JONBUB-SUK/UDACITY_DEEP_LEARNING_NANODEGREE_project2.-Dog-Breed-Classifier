@@ -3,7 +3,7 @@
 
 ## 1. Abstract
 
-The purpose of this project is to make aplication program that can classify dog breed
+The purpose of this project is to make aplication program that can classify dog's breed
 
 If detected picture is dog, program should present the dog's breed
 
