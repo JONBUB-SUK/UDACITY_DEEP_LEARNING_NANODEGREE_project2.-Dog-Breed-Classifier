@@ -9,7 +9,7 @@ If detected picture is dog, program should present the dog's breed
 
 And if detected picture is human, program should present the most similar dog's breed
 
-First, I made human detection program
+Firstly, I made human detection program
 
 To do that, I used cv2.CascadeClassifier in cv2 libarary
 
@@ -363,7 +363,7 @@ I will get better result
 
 #### 3) Human detection part
 
-It's accuracy at human picture was good, but it also mistaken dog as human as 17%
+It's accuracy for human pictures was good, but it also mistaken dog as human as 17%
 
 So it also need to use data learning method not only depend on cv2 library
 
