@@ -277,6 +277,7 @@ optimizer_transfer = optim.Adam(model_transfer.classifier[6].parameters(), lr=0.
 After 10 epochs, achieved
 
 train loss : 1.262 → 0.304
+
 valid loss : 0.561 → 0.446
 
 test loss : 0.628 (85% accuracy)
